@@ -40,7 +40,7 @@ func emitAppUpdateAvailable(message string) {
 	if app == nil {
 		return
 	}
-	const downloadURL = "https://github.com/TCNOco/TcNo-Acc-Switcher/releases/latest"
+	const downloadURL = updatecheck.ReleasesPageURL
 	_ = app.Event.Emit(AppUpdateAvailableEvent, UpdateAvailablePayload{
 		Message:     message,
 		DownloadURL: downloadURL,
@@ -79,16 +79,22 @@ func runLaunchUpdateCheck() {
 	}
 
 	currentVersion := appVersionFromBuildConfig()
-	apiResultCh := make(chan updatecheck.LaunchAPICheckResult, 1)
-	go func() {
-		apiResultCh <- updatecheck.FetchLaunchAPICheck(context.Background(), currentVersion)
-	}()
+	var apiResultCh chan updatecheck.LaunchAPICheckResult
+	if updatecheck.UseTcnoAPIFallback {
+		apiResultCh = make(chan updatecheck.LaunchAPICheckResult, 1)
+		go func() {
+			apiResultCh <- updatecheck.FetchLaunchAPICheck(context.Background(), currentVersion)
+		}()
+	}
 
 	go runLaunchPlatformsJSONCheck(exeDir)
 
 	wailsCtx, wailsCancel := context.WithTimeout(context.Background(), wailsUpdateCheckTimeout)
 	defer wailsCancel()
 	if _, ok := tryWailsUpdateCheck(wailsCtx); ok {
+		return
+	}
+	if apiResultCh == nil {
 		return
 	}
 
@@ -323,6 +329,9 @@ func (*PlatformService) CheckForUpdatesManually() string {
 	defer wailsCancel()
 	if result, ok := tryWailsUpdateCheck(wailsCtx); ok {
 		return result
+	}
+	if !updatecheck.UseTcnoAPIFallback {
+		return "failed"
 	}
 
 	apiCtx, apiCancel := context.WithTimeout(context.Background(), apiUpdateCheckTimeout)

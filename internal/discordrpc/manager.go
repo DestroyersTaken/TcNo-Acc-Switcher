@@ -135,7 +135,7 @@ func (m *Manager) Refresh() {
 		SmallImage: discordSmallImageKey,
 		SmallText:  "TcNo Account Switcher",
 		Buttons: []*richgo.Button{
-			{Label: "Website", Url: "https://github.com/TCNOCo/TcNo-Acc-Switcher/"},
+			{Label: "Website", Url: "https://github.com/DestroyersTaken/TcNo-Acc-Switcher/"},
 		},
 		Timestamps: &richgo.Timestamps{Start: &m.startedAt},
 	}

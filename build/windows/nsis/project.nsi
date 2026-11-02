@@ -148,8 +148,8 @@ FunctionEnd
   !insertmacro MUI_PAGE_INSTFILES
 
   !define MUI_FINISHPAGE_NOAUTOCLOSE
-  !define MUI_FINISHPAGE_LINK "https://github.com/TCNOCo/TcNo-Acc-Switcher"
-  !define MUI_FINISHPAGE_LINK_LOCATION "https://github.com/TCNOCo/TcNo-Acc-Switcher"
+  !define MUI_FINISHPAGE_LINK "https://github.com/DestroyersTaken/TcNo-Acc-Switcher"
+  !define MUI_FINISHPAGE_LINK_LOCATION "https://github.com/DestroyersTaken/TcNo-Acc-Switcher"
 
 Function Finish
   ${If} $CheckLaunchState <> 0

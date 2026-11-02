@@ -22,7 +22,7 @@ import (
 const servicePrefix = "SERVICE:"
 
 const (
-	gracefulExitMaxWait         = 12 * time.Second
+	gracefulExitMaxWait = 12 * time.Second
 	// Combined is the default for most launchers (Epic, Riot, EA). 5 s was the
 	// shortest wait of any method and launchers that flush their session on exit
 	// were force-killed mid-write. The wait returns as soon as the process is
