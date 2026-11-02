@@ -112,6 +112,8 @@
     type AccountActionsContext,
   } from "../lib/accounts/accountActions";
 
+  import { platformIconFgHref } from "../lib/platformIcon";
+
   export let name: string;
   export let adapter: PlatformAccountAdapter<TAccount>;
 
@@ -211,6 +213,10 @@
   $: reorderDisabled = tagFilterMode.kind !== "all";
 
   $: knownAccountCount = $platformAccountCounts[name];
+
+  // Summary strip: how many accounts are saved and which one is signed in now.
+  $: activeAccount = accounts.find((a) => adapter.currentSession(a)) ?? null;
+  $: summaryCount = accounts.length || knownAccountCount || 0;
   $: hasActiveTags = hasActiveAccountTags(accounts, adapter);
   $: {
     if (!hasActiveTags && tagFilterMode.kind !== "all") {
@@ -1126,6 +1132,24 @@
         on:pick={(e) => void onSearchPick(e)}
       />
       <div class="platformTable">
+      <header class="acc-summary">
+        <svg class="acc-summary__icon" viewBox="0 0 500 500" aria-hidden="true">
+          <use href={platformIconFgHref(name)} />
+        </svg>
+        <div class="acc-summary__text">
+          <h1 class="acc-summary__title">{name}</h1>
+          <p class="acc-summary__meta">
+            <span class="acc-summary__count">{summaryCount === 1 ? $t("Accounts_Summary_CountOne") : $t("Accounts_Summary_Count", { count: summaryCount })}</span>
+            <span class="acc-summary__sep" aria-hidden="true">·</span>
+            {#if activeAccount}
+              <span class="acc-summary__active"><span class="acc-summary__dot" aria-hidden="true"></span>{$t("Accounts_Summary_Active", { name: $censoredName(adapter.name(activeAccount)) })}</span>
+            {:else}
+              <span class="acc-summary__inactive">{$t("Accounts_Summary_NoActive")}</span>
+            {/if}
+          </p>
+        </div>
+        <span class="acc-summary__hint">{$t("Accounts_Summary_Hint")}</span>
+      </header>
       {#if loadError}
         <p class="platform-accounts-hint">{loadError}</p>
       {/if}

@@ -1,0 +1,442 @@
+/*
+    Modern default look.
+
+    Everything here is scoped to `:root[data-theme="default"]`, which
+    lib/theme/stores.ts keeps in sync with the active theme. Picking any other
+    theme (including "Old Default") drops all of it, so community themes render
+    exactly as they were written.
+
+    The `:root[...]` prefix also adds (0,2,0) of specificity, which is what lets
+    these rules win over page stylesheets that load later (Settings.scss and
+    friends are imported lazily by their pages) and over Svelte's scoped classes.
+*/
+
+:root[data-theme="default"] {
+    /* Palette: neutral slate surfaces stepping up in lightness, hairline
+       borders instead of heavy frames. The accent stays whatever the user
+       picked; it is used for state, not decoration. */
+    --m-bg: #0d1015;
+    --m-surface: #141820;
+    --m-surface-2: #1a1f29;
+    --m-surface-3: #222834;
+    --m-surface-hover: #2a3140;
+    --m-border: rgba(255, 255, 255, 0.07);
+    --m-border-strong: rgba(255, 255, 255, 0.13);
+    --m-text: #e9edf2;
+    --m-text-muted: #9ba5b4;
+    --m-radius-sm: 6px;
+    --m-radius: 10px;
+    --m-radius-lg: 14px;
+    --m-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    --m-accent-soft: rgba(var(--accentInt), 0.14);
+    --m-accent-line: rgba(var(--accentInt), 0.55);
+
+    /* Re-point the theme variables the rest of the app already reads. */
+    --program-bg: var(--m-bg);
+    --mainContentBackground: var(--m-bg);
+    --document-canvas-bg: var(--m-bg);
+    --border-bar-bg: var(--m-bg);
+    --border-bar-size: 0px;
+    --footer-bg: var(--m-surface);
+    --surface-row-dark: var(--m-surface);
+    --code-background: var(--m-surface);
+    --button-bg: var(--m-surface-3);
+    --button-bg-hover: var(--m-surface-hover);
+    --tooltip-bg: var(--m-surface-3);
+    --scrollbar-track-bg: transparent;
+    --form-checkbox-border: rgba(255, 255, 255, 0.28);
+    --input-number-border: var(--m-border-strong);
+    --window-control-hover-bg: var(--m-surface-3);
+    --text-body-muted: var(--m-text-muted);
+    --text-muted-gray: var(--m-text-muted);
+    --modal-border: var(--m-border-strong);
+    --overlay-panel-bg: rgba(20, 24, 32, 0.97);
+    --surface-context-submenu: var(--m-surface-2);
+    --surface-context-row: var(--m-surface-hover);
+
+    /* Scrollbar: a thin neutral thumb rather than a full accent stripe. */
+    ::-webkit-scrollbar-thumb {
+        background-color: rgba(255, 255, 255, 0.16);
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background-color: rgba(255, 255, 255, 0.28);
+    }
+
+    /* ---------- Title bar ---------- */
+
+    .headerbar {
+        background: var(--m-bg);
+        border-bottom: 1px solid var(--m-border);
+        font-family: inherit;
+        color: var(--m-text-muted);
+    }
+
+    #title-label {
+        font-weight: 600;
+        color: var(--m-text-muted);
+    }
+
+    .header_tab {
+        height: 22px;
+        padding: 0 12px;
+        border-radius: 999px;
+        border-color: var(--m-border-strong);
+        background: var(--m-surface-2);
+        letter-spacing: 0.04em;
+
+        &:hover {
+            background: var(--m-surface-hover);
+        }
+    }
+
+    .win-btn:not(.win-btn-close):hover {
+        background: var(--m-surface-3);
+    }
+
+    /* ---------- Generic controls ---------- */
+
+    .button,
+    .btnicontext,
+    .actionbar button,
+    .dropdown-toggle {
+        border-radius: var(--m-radius-sm);
+    }
+
+    .button {
+        border-color: var(--m-border);
+    }
+
+    .tooltip .tooltip-inner {
+        padding: 0.35rem 0.65rem;
+        border: 1px solid var(--m-border-strong);
+        border-radius: var(--m-radius-sm);
+        background: var(--m-surface-3);
+        color: var(--m-text);
+        font-size: 0.85rem;
+        box-shadow: var(--m-shadow);
+    }
+
+    .tooltip .tooltip-arrow {
+        display: none;
+    }
+
+    input[type="number"],
+    input[type="text"],
+    input[type="password"],
+    textarea {
+        border: 1px solid var(--m-border-strong);
+        border-radius: var(--m-radius-sm);
+        background: var(--m-surface);
+
+        &:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--m-accent-soft);
+        }
+    }
+
+    /* Checkboxes: rounded box, accent fill with a drawn tick when on. */
+    input[type="checkbox"] + label {
+        border-radius: 5px;
+        border-color: var(--form-checkbox-border);
+        background: var(--m-surface);
+    }
+
+    input[type="checkbox"]:checked + label {
+        border-color: var(--accent);
+        background: var(--accent);
+
+        &::after {
+            content: "";
+            position: absolute;
+            left: 6px;
+            top: 2px;
+            width: 5px;
+            height: 10px;
+            border: solid var(--text-on-bright-bg, #000);
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+    }
+
+    /* ---------- Bottom action bar ---------- */
+
+    .actionbar {
+        height: 3.75em;
+        min-height: 3.75em;
+        padding: 0.4em 0.6em;
+        gap: 0.5rem;
+        border-top: 1px solid var(--m-border);
+        background: var(--m-surface);
+    }
+
+    .actionbar__actions {
+        gap: 0.4rem;
+    }
+
+    .actionbar button {
+        height: 34px;
+        margin: 0;
+        border: 1px solid var(--m-border);
+        background: var(--m-surface-3);
+
+        &:hover:not(:disabled) {
+            background: var(--m-surface-hover);
+            border-color: var(--m-border-strong);
+        }
+    }
+
+    .actionbar button.square {
+        width: 34px;
+
+        svg {
+            height: 1rem;
+        }
+    }
+
+    /* Login is the one thing this screen is for, so it is the one filled button. */
+    .actionbar .actionbar__login {
+        padding: 0 1.6em;
+        border-color: transparent;
+        background: var(--accent);
+        color: var(--text-on-bright-bg, #000);
+        font-weight: 700;
+
+        svg {
+            fill: var(--text-on-bright-bg, #000);
+        }
+
+        &:hover:not(:disabled) {
+            border-color: transparent;
+            background: var(--accent);
+            filter: brightness(1.08);
+        }
+    }
+
+    .actionbar__status {
+        font-weight: 500;
+        color: var(--m-text-muted);
+    }
+
+    /* ---------- Home ---------- */
+
+    .home-hero {
+        padding: 1.25rem 1.5rem 0.75rem;
+    }
+
+    .home-hero__title {
+        color: var(--m-text);
+    }
+
+    .home-stat {
+        border-color: var(--m-border);
+        border-radius: var(--m-radius);
+        background: var(--m-surface);
+    }
+
+    .platform_list {
+        justify-content: flex-start;
+        gap: 1rem;
+        padding: 0.5rem 1.5rem 1.5rem;
+    }
+
+    .platform_list_item {
+        margin: 0;
+        border: 1px solid var(--m-border);
+        border-radius: var(--m-radius-lg);
+        overflow: hidden;
+        background:
+            radial-gradient(120% 90% at 50% 0%, var(--m-accent-soft) 0%, transparent 60%),
+            var(--m-surface);
+        text-shadow: none;
+
+        &:hover {
+            border-color: var(--m-accent-line);
+            box-shadow: var(--m-shadow);
+
+            &:not(:active) {
+                transform: translateY(-3px);
+                filter: none;
+            }
+        }
+
+        &.platform_list_placeholder {
+            border: 1px dashed var(--m-accent-line);
+            background: transparent;
+        }
+
+        .icoBG {
+            display: none;
+        }
+
+        .fgText p {
+            letter-spacing: 0.03em;
+        }
+    }
+
+    .platform_tile_count {
+        background: var(--m-surface-3);
+        border: 1px solid var(--m-border);
+        color: var(--m-text-muted);
+    }
+
+    /* ---------- Account page ---------- */
+
+    .acc-summary {
+        margin: 0.75rem 1rem 0.25rem;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--m-border);
+        border-radius: var(--m-radius-lg);
+        background: var(--m-surface);
+    }
+
+    .acc-summary__icon {
+        width: 3rem;
+        height: 3rem;
+        padding: 0.45rem;
+        border-radius: var(--m-radius);
+        background: var(--m-accent-soft);
+    }
+
+    label.acc .live-session-badge {
+        top: 10px;
+        left: 10px;
+    }
+
+    .acc-summary__title {
+        color: var(--m-text);
+    }
+
+    .acc_list {
+        grid-template-columns: repeat(auto-fill, 128px);
+        justify-content: start;
+        gap: 0.75rem;
+        padding: 0.75rem 1rem 1rem;
+    }
+
+    .acc_list_item {
+        border: 0;
+    }
+
+    label.acc {
+        min-width: 128px;
+        max-width: 128px;
+        min-height: 160px;
+        margin: 0;
+        padding: 0.85rem 0.5rem 0.75rem;
+        border: 1px solid var(--m-border);
+        border-radius: var(--m-radius-lg);
+        background: var(--m-surface);
+        line-height: 1.25;
+
+        &:hover:not(.acc--broken) {
+            border-color: var(--m-border-strong);
+            background: var(--m-surface-2);
+            box-shadow: var(--m-shadow);
+        }
+
+        > img,
+        .steam-acc-avatar-wrap {
+            width: 72px;
+            height: 72px;
+            margin-bottom: 0.6rem;
+        }
+
+        > img,
+        img.steam-acc-avatar,
+        video.steam-acc-avatar {
+            border: 0;
+            border-radius: var(--m-radius);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        h6 {
+            max-width: 100%;
+            margin-top: 0.1rem;
+            font-size: 1.05em;
+            font-weight: 700;
+            color: var(--m-text);
+        }
+
+        p {
+            max-width: 100%;
+            color: var(--m-text-muted);
+        }
+    }
+
+    .steam-acclist .acc_lastused {
+        margin-top: 0.35rem;
+        opacity: 1;
+        font-size: 0.7rem;
+    }
+
+    /* Selected: accent outline. Signed in: solid green ring, no dashed border. */
+    input.acc:checked + label.acc {
+        border-color: var(--accent);
+        background: var(--m-surface-2);
+        box-shadow: 0 0 0 3px var(--m-accent-soft);
+    }
+
+    label.acc.currentAcc {
+        border-style: solid;
+        border-color: rgba(var(--greenInt), 0.55);
+    }
+
+    input.acc:checked + label.acc.currentAcc {
+        border-color: var(--green);
+        box-shadow: 0 0 0 3px rgba(var(--greenInt), 0.16);
+    }
+
+    .placeHolderAcc,
+    .acc_list_item--skeleton {
+        width: 128px;
+        min-height: 160px;
+        border-radius: var(--m-radius-lg);
+        border-color: var(--m-border-strong);
+        background: var(--m-surface);
+    }
+
+    /* ---------- Context menu ---------- */
+
+    .contextmenu,
+    .context-menu {
+        border: 1px solid var(--m-border-strong);
+        border-radius: var(--m-radius);
+        box-shadow: var(--m-shadow);
+        overflow: hidden;
+    }
+
+    /* ---------- Settings ---------- */
+
+    .SettingsHeader {
+        border-left: 0;
+        padding-left: 0;
+        color: var(--m-text);
+    }
+
+    h1.SettingsHeader {
+        margin-top: 1.25rem;
+        font-size: 1.6rem;
+    }
+
+    h2.SettingsHeader {
+        margin: 0 0 0.6rem;
+        font-size: 1.05rem;
+    }
+
+    /* Each settings group becomes a card instead of a bar-marked run of rows. */
+    .settings-group {
+        margin: 0 0 0.85rem;
+        padding: 0.9rem 1rem 0.75rem;
+        border: 1px solid var(--m-border);
+        border-radius: var(--m-radius-lg);
+        background: var(--m-surface);
+    }
+
+    .settings-divider {
+        border-top-color: var(--m-border);
+    }
+
+    .settings-search {
+        border-bottom: 0;
+    }
+}

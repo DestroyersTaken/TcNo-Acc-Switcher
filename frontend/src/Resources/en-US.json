@@ -1170,5 +1170,18 @@
   "ServerPicker_EnableAll": "Enable All",
   "ServerPicker_LoadFailed": "Could not load the server list",
   "ServerPicker_PingFailed": "Could not ping the servers",
-  "ServerPicker_ApplyFailed": "Could not change the server"
+  "ServerPicker_ApplyFailed": "Could not change the server",
+  "Home_Hero_Title": "Your platforms",
+  "Home_Hero_Subtitle": "Pick a platform to see its saved accounts.",
+  "Home_Stat_Platforms": "Platforms",
+  "Home_Stat_Accounts": "Saved accounts",
+  "Home_Stat_Switches": "Switches",
+  "Home_Stat_MostUsed": "Most used",
+  "Home_Tile_Accounts": "{count} accounts",
+  "Home_Tile_Account": "1 account",
+  "Accounts_Summary_Count": "{count} accounts",
+  "Accounts_Summary_CountOne": "1 account",
+  "Accounts_Summary_Active": "Signed in as {name}",
+  "Accounts_Summary_NoActive": "No account signed in",
+  "Accounts_Summary_Hint": "Double-click to switch · Right-click for more"
 }

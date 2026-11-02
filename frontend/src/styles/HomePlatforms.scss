@@ -253,3 +253,83 @@
     box-shadow: 0 12px 36px var(--shadow-color-50);
   }
 }
+
+/* Summary strip above the platform tiles. Built only from theme variables so
+   every theme paints it in its own colours. */
+.home-hero {
+  flex: 0 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.5rem;
+  padding: 1rem 1.25rem 0.5rem;
+  color: var(--whiteSecondary);
+}
+
+.home-hero__title {
+  margin: 0;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.home-hero__sub {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.3;
+  color: var(--text-body-muted);
+}
+
+.home-hero__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home-stat {
+  display: flex;
+  flex-direction: column;
+  min-width: 5.5rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--overlay-white-08);
+  border-radius: 0.5rem;
+  background: var(--overlay-white-06);
+  line-height: 1.2;
+}
+
+.home-stat__value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--accent-text-heading, var(--accent));
+}
+
+.home-stat__value--text {
+  font-size: 0.95rem;
+  line-height: 1.45rem;
+}
+
+.home-stat__label {
+  font-size: 0.72rem;
+  color: var(--text-body-muted);
+}
+
+/* Account count on each platform tile, top-right. */
+.platform_tile_count {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 11;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  background: var(--backdrop-dark-35);
+  color: var(--whiteSecondary);
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.5rem;
+  text-shadow: none;
+  pointer-events: none;
+}

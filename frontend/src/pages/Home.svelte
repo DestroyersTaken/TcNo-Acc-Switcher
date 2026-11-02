@@ -24,7 +24,7 @@
   import { reorderItemByCommand, type ReorderCommand } from "../lib/reorderList";
   import { checkForUpdatesManually } from "../lib/checkForUpdates";
   import { closeSearchOverlay, searchOverlayCtrl } from "../stores/searchOverlay";
-  import { setPlatformAccountCounts } from "../stores/platformAccountsCache";
+  import { setPlatformAccountCounts, platformAccountCounts } from "../stores/platformAccountsCache";
   import { prefetchPlatformPages } from "../lib/pageLoaders";
   import { homeScreenData } from "../stores/homeScreenData";
   import {
@@ -48,6 +48,26 @@
   let warmedPlatformPages = false;
 
   const SEARCH_MAX = 5;
+
+  // Summary strip above the tiles. Stats come from the local usage report and
+  // are optional: a failed or empty report just leaves those chips out.
+  let statSwitches = 0;
+  let statMostUsed = "";
+  $: savedAccountTotal = homeOrder.reduce((sum, id) => sum + ($platformAccountCounts[id] ?? 0), 0);
+  $: tileCount = (id: string): number | null => {
+    const n = $platformAccountCounts[id];
+    return typeof n === "number" ? n : null;
+  };
+
+  async function loadHomeStats(): Promise<void> {
+    try {
+      const r = await PlatformService.GetStatsReport();
+      statSwitches = r?.totalSwitches ?? 0;
+      statMostUsed = r?.mostUsedPlatform ?? "";
+    } catch {
+      /* stats are decoration; the page works without them */
+    }
+  }
 
   $: so = $searchOverlayCtrl;
   $: appBarTitle.set("TcNo Account Switcher");
@@ -369,6 +389,7 @@
 
   onMount(() => {
     void refreshStartup();
+    void loadHomeStats();
     offHomeSort = platformListSort.subscribe((sig) => {
       if (!sig || sig.id <= lastHandledHomeSortId) {
         return;
@@ -410,6 +431,34 @@
     {:else if startup.platformsFileMissing}
       <p class="home-msg">{$t("Modal_Body_MissingPlatformsJson")}</p>
     {:else}
+      <header class="home-hero">
+        <div class="home-hero__text">
+          <h1 class="home-hero__title">{$t("Home_Hero_Title")}</h1>
+          <p class="home-hero__sub">{$t("Home_Hero_Subtitle")}</p>
+        </div>
+        <ul class="home-hero__stats" aria-label={$t("Home_Hero_Title")}>
+          <li class="home-stat">
+            <span class="home-stat__value">{homeOrder.length}</span>
+            <span class="home-stat__label">{$t("Home_Stat_Platforms")}</span>
+          </li>
+          <li class="home-stat">
+            <span class="home-stat__value">{savedAccountTotal}</span>
+            <span class="home-stat__label">{$t("Home_Stat_Accounts")}</span>
+          </li>
+          {#if statSwitches > 0}
+            <li class="home-stat">
+              <span class="home-stat__value">{statSwitches}</span>
+              <span class="home-stat__label">{$t("Home_Stat_Switches")}</span>
+            </li>
+          {/if}
+          {#if statMostUsed}
+            <li class="home-stat">
+              <span class="home-stat__value home-stat__value--text">{tileLabel(statMostUsed)}</span>
+              <span class="home-stat__label">{$t("Home_Stat_MostUsed")}</span>
+            </li>
+          {/if}
+        </ul>
+      </header>
       <div class="platformTable">
         <ReorderPointerGrid
           items={homeOrder}
@@ -429,7 +478,11 @@
             {@const rid = slotKey(rowId)}
             {@const label = tileLabel(rid)}
             <!-- svelte-ignore a11y-no-static-element-interactions -->
+            {@const count = tileCount(rid)}
             <div class="platform_tile_ctx" use:contextMenu={() => tileContextMenu(rid)}>
+              {#if count !== null}
+                <span class="platform_tile_count">{count === 1 ? $t("Home_Tile_Account") : $t("Home_Tile_Accounts", { count })}</span>
+              {/if}
               <div class="fgText {textClass(label)}">
                 <p>{label.toUpperCase()}</p>
               </div>
