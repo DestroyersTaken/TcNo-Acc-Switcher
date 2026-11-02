@@ -71,6 +71,7 @@ type AccountSave struct {
 	Encrypted   bool
 	journalPath string
 	cleanup     func()
+	committed   *bool
 }
 
 func BeginAccountSave(platformKey, uniqueID, accountName, normalDir string) (AccountSave, error) {
@@ -78,7 +79,7 @@ func BeginAccountSave(platformKey, uniqueID, accountName, normalDir string) (Acc
 	uniqueID = strings.TrimSpace(uniqueID)
 	accountName = strings.TrimSpace(accountName)
 	if !SavedAccountDataEncrypted() {
-		return AccountSave{PlatformKey: platformKey, UniqueID: uniqueID, AccountName: accountName, DestRoot: normalDir}, nil
+		return beginPlainAccountSave(platformKey, uniqueID, accountName, normalDir)
 	}
 	if err := RequireUnlocked(); err != nil {
 		return AccountSave{}, err
@@ -110,9 +111,102 @@ func BeginAccountSave(platformKey, uniqueID, accountName, normalDir string) (Acc
 	}, nil
 }
 
+// plainSaveStagingSuffix and plainSaveOldSuffix name the sibling folders an
+// unencrypted save is written into and the previous save is parked in while the
+// new one is swapped in. Siblings, so the final rename never crosses a volume.
+const (
+	plainSaveStagingSuffix = ".tcno-saving"
+	plainSaveOldSuffix     = ".tcno-previous"
+)
+
+// beginPlainAccountSave stages an unencrypted save next to the real cache folder.
+// The old save stays untouched until CommitAccountSave swaps the finished copy
+// in, so a copy that fails half way (a launcher still holding a file, a full
+// disk) can no longer wipe out the last good login for that account.
+func beginPlainAccountSave(platformKey, uniqueID, accountName, normalDir string) (AccountSave, error) {
+	normalDir = strings.TrimSpace(normalDir)
+	if normalDir == "" {
+		return AccountSave{PlatformKey: platformKey, UniqueID: uniqueID, AccountName: accountName, DestRoot: normalDir}, nil
+	}
+	recoverParkedPlainSave(normalDir)
+	staging := filepath.Clean(normalDir) + plainSaveStagingSuffix
+	if err := fsutil.RemoveAllWithRetry(staging, 2*time.Second, os.RemoveAll); err != nil {
+		return AccountSave{}, fmt.Errorf("clear save staging %s: %w", staging, err)
+	}
+	committed := false
+	save := AccountSave{
+		PlatformKey: platformKey,
+		UniqueID:    uniqueID,
+		AccountName: accountName,
+		DestRoot:    staging,
+	}
+	save.committed = &committed
+	save.cleanup = func() {
+		if !committed {
+			_ = os.RemoveAll(staging)
+		}
+	}
+	return save, nil
+}
+
+// recoverParkedPlainSave puts a parked previous save back if the app stopped
+// between parking it and moving the new one in, so that account still restores.
+func recoverParkedPlainSave(normalDir string) {
+	normalDir = strings.TrimSpace(normalDir)
+	if normalDir == "" {
+		return
+	}
+	normalDir = filepath.Clean(normalDir)
+	old := normalDir + plainSaveOldSuffix
+	if _, err := os.Stat(normalDir); !os.IsNotExist(err) {
+		return
+	}
+	if st, err := os.Stat(old); err == nil && st.IsDir() {
+		_ = os.Rename(old, normalDir)
+	}
+}
+
+// commitPlainAccountSave moves the staged copy into place: current save is
+// parked aside, the staged one renamed in, and only then is the parked copy
+// deleted. If the second rename fails the parked copy is put back.
+func commitPlainAccountSave(save AccountSave, normalDir string) error {
+	normalDir = filepath.Clean(strings.TrimSpace(normalDir))
+	staging := save.DestRoot
+	if staging == "" || filepath.Clean(staging) == normalDir {
+		return nil
+	}
+	old := normalDir + plainSaveOldSuffix
+	if err := fsutil.RemoveAllWithRetry(old, 2*time.Second, os.RemoveAll); err != nil {
+		return fmt.Errorf("clear previous save %s: %w", old, err)
+	}
+	hadOld := false
+	if _, err := os.Stat(normalDir); err == nil {
+		if err := os.Rename(normalDir, old); err != nil {
+			return fmt.Errorf("park previous save %s: %w", normalDir, err)
+		}
+		hadOld = true
+	}
+	if err := os.MkdirAll(filepath.Dir(normalDir), 0o755); err != nil {
+		return err
+	}
+	if err := os.Rename(staging, normalDir); err != nil {
+		if hadOld {
+			_ = os.Rename(old, normalDir)
+		}
+		return fmt.Errorf("move new save into place %s: %w", normalDir, err)
+	}
+	if save.committed != nil {
+		*save.committed = true
+	}
+	if hadOld {
+		_ = fsutil.RemoveAllWithRetry(old, 2*time.Second, os.RemoveAll)
+	}
+	return nil
+}
+
 func CommitAccountSave(save AccountSave, normalDir string) error {
 	if !save.Encrypted {
-		return nil
+		return commitPlainAccountSave(save, normalDir)
 	}
 	defer save.cleanup()
 	key, err := defaultManager.unlockedMasterKey()
@@ -143,6 +237,7 @@ func AccountRestoreDir(platformKey, uniqueID, accountName, normalDir string) (st
 	uniqueID = strings.TrimSpace(uniqueID)
 	accountName = strings.TrimSpace(accountName)
 	if !SavedAccountDataEncrypted() {
+		recoverParkedPlainSave(normalDir)
 		return normalDir, func() {}, nil
 	}
 	key, err := defaultManager.unlockedMasterKey()

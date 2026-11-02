@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"TcNo-Acc-Switcher/internal/actionlog"
 )
@@ -22,7 +23,37 @@ func isSharingViolationErr(err error) bool {
 		strings.Contains(s, "lock violation")
 }
 
+// copyRetryDelays is how long copyFile waits between attempts when a file is
+// locked by another process. A launcher that was just closed can keep handles
+// on its login files (LevelDB, cookies) for a second or two after the process
+// itself is gone; this rides that out instead of failing the whole switch.
+// Total wait is about 4.5 s. Package variable so tests can shorten it.
+var copyRetryDelays = []time.Duration{
+	150 * time.Millisecond,
+	300 * time.Millisecond,
+	600 * time.Millisecond,
+	1200 * time.Millisecond,
+	2200 * time.Millisecond,
+}
+
+// copyFile copies src to dst, retrying while either side is locked by another
+// process. Non-lock errors fail straight away.
 func copyFile(src, dst string) error {
+	err := copyFileOnceFn(src, dst)
+	for attempt := 0; err != nil && isSharingViolationErr(err) && attempt < len(copyRetryDelays); attempt++ {
+		wait := copyRetryDelays[attempt]
+		logFlow().Info("copyFile: file locked, retrying", "src", src, "dst", dst, "attempt", attempt+1, "wait", wait)
+		time.Sleep(wait)
+		err = copyFileOnceFn(src, dst)
+	}
+	return err
+}
+
+// copyFileOnceFn is the single-attempt copy; a variable only so tests can
+// simulate a locked file, which Linux cannot produce on demand.
+var copyFileOnceFn = copyFileOnce
+
+func copyFileOnce(src, dst string) error {
 	in, err := os.Open(src)
 	if err != nil {
 		if isSharingViolationErr(err) {
@@ -55,6 +86,12 @@ func copyFile(src, dst string) error {
 		}
 		actionlog.Record("file:copy", src, dst, err)
 		return fmt.Errorf("copy %s -> %s: %w", src, dst, err)
+	}
+	// Flush before the platform is relaunched: on network drives, removable
+	// media or behind some antivirus filters, Close alone can return before the
+	// data is on disk and the launcher then reads a short file.
+	if err := out.Sync(); err != nil {
+		logFlow().Debug("copyFile: sync failed", "dst", dst, "err", err)
 	}
 	logFlow().Debug("copied file", "src", src, "dst", dst)
 	actionlog.Record("file:copy", src, dst, nil)

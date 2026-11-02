@@ -222,10 +222,18 @@ export function navigateBackLikeButton(): void {
     history.back();
     return;
   }
-  if (typeof window !== "undefined" && window.history.length > 1) {
-    history.back();
-    return;
+  // No in-app history left: the app opened straight onto this page (last-used
+  // platform, a shortcut, the tray). The WebView's own history can still hold
+  // entries from before the app routed, so history.back() there went nowhere
+  // and the back button looked dead. Step up to the previous page instead, or
+  // home when that is missing or is the page already showing.
+  replaceCurrentHistoryRoute(backFallbackRoute(r, get(previousPage)));
+}
+
+/** Where back goes when there is no in-app history to pop. */
+export function backFallbackRoute(current: Route, prev: Route | null): Route {
+  if (prev && serializeRoute(prev) !== serializeRoute(current)) {
+    return prev;
   }
-  const prev = get(previousPage);
-  replaceCurrentHistoryRoute(prev ?? { page: "home" });
+  return { page: "home" };
 }

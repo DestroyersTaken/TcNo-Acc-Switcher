@@ -792,13 +792,22 @@ func SwapTo(deps FlowDeps, platformKey, uniqueID string, extraLaunchArgs []strin
 	if err != nil {
 		return err
 	}
-	if curErr == nil && strings.TrimSpace(cur) != "" {
+	if curErr == nil && strings.TrimSpace(cur) != "" &&
+		!strings.EqualFold(strings.TrimSpace(cur), strings.TrimSpace(uniqueID)) {
 		if prevName, ok := ids[cur]; ok {
-			if !strings.EqualFold(strings.TrimSpace(cur), strings.TrimSpace(uniqueID)) {
-				platform.EmitActionBarStatusI18n("Status_ActionBar_SavingSession")
-				if err := saveCurrentAfterKill(deps, prevName, fc); err != nil {
-					return wrapNeedsAdminIfPermission(err)
-				}
+			platform.EmitActionBarStatusI18n("Status_ActionBar_SavingSession")
+			if err := saveCurrentAfterKill(deps, prevName, fc); err != nil {
+				return wrapNeedsAdminIfPermission(err)
+			}
+		} else {
+			// Signed in to an account that was never saved. The switch is about
+			// to clear it, so keep it as a normal saved account first: switching
+			// back is one double-click and nothing is lost by accident.
+			name := autoSavedSessionName(ids, time.Now())
+			logFlow().Info("swap: backing up unsaved live session", "platform", platformKey, "name", name)
+			platform.EmitActionBarStatusI18n("Status_ActionBar_SavingSession")
+			if err := saveCurrentAfterKill(deps, name, fc); err != nil {
+				return fmt.Errorf("could not back up the unsaved login before switching, so the switch was cancelled: %w", wrapNeedsAdminIfPermission(err))
 			}
 		}
 	}
@@ -882,4 +891,20 @@ func LaunchBasicAs(deps FlowDeps, platformKey string, forceAdmin bool, extraLaun
 	defer platform.EmitActionBarStatus("")
 	platform.EmitActionBarStatusI18nPlatform("Status_StartingPlatform", platformKey)
 	return launchBasicNoStatusAs(deps, platformKey, forceAdmin, extraLaunchArgs)
+}
+
+// autoSavedSessionName names the account an unsaved live login is kept under
+// when the user switches away from it. Date and time keep it unique and tell
+// the user when it was captured; a counter covers two in the same minute.
+func autoSavedSessionName(existing map[string]string, now time.Time) string {
+	base := "Unsaved login " + now.Format("2006-01-02 15.04")
+	taken := make(map[string]bool, len(existing))
+	for _, n := range existing {
+		taken[strings.ToLower(strings.TrimSpace(n))] = true
+	}
+	name := base
+	for i := 2; taken[strings.ToLower(name)]; i++ {
+		name = fmt.Sprintf("%s (%d)", base, i)
+	}
+	return name
 }

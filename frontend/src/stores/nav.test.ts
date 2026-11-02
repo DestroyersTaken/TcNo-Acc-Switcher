@@ -5,7 +5,7 @@ vi.mock("../../bindings/TcNo-Acc-Switcher/internal/platform/platformservice.js",
   GetStartup: vi.fn(),
 }));
 
-import { previousPage, route } from "./nav";
+import { backFallbackRoute, previousPage, route } from "./nav";
 
 /**
  * These guard the Svelte 5 remount loop: pages set their own route on mount,
@@ -103,5 +103,22 @@ describe("previousPage store", () => {
 
     previousPage.set(null);
     expect(get(previousPage)).toBeNull();
+  });
+});
+
+describe("backFallbackRoute", () => {
+  it("goes home when there is no previous page", () => {
+    expect(backFallbackRoute({ page: "platform", platformName: "Steam" }, null)).toEqual({ page: "home" });
+  });
+
+  it("goes home when the previous page is the one already showing", () => {
+    const steam = { page: "platform", platformName: "Steam" } as const;
+    expect(backFallbackRoute(steam, { ...steam })).toEqual({ page: "home" });
+  });
+
+  it("returns the previous page when it differs", () => {
+    expect(
+      backFallbackRoute({ page: "settings" }, { page: "platform", platformName: "Steam" }),
+    ).toEqual({ page: "platform", platformName: "Steam" });
   });
 });

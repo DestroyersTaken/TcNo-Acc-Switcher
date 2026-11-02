@@ -23,7 +23,11 @@ const servicePrefix = "SERVICE:"
 
 const (
 	gracefulExitMaxWait         = 12 * time.Second
-	gracefulCombinedExitMaxWait = 5 * time.Second
+	// Combined is the default for most launchers (Epic, Riot, EA). 5 s was the
+	// shortest wait of any method and launchers that flush their session on exit
+	// were force-killed mid-write. The wait returns as soon as the process is
+	// gone, so a longer cap only costs time for launchers that are really slow.
+	gracefulCombinedExitMaxWait = 10 * time.Second
 	// gracefulQuitSettle lets a tray app re-create the hidden root window it hides on
 	// first close, so the second WM_CLOSE pass has something to hit.
 	gracefulQuitSettle = 200 * time.Millisecond
